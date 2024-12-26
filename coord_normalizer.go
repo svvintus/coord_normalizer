@@ -1,49 +1,36 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 )
 
-func getWorkingDir() (string, error) {
-	if len(os.Args) < 2 {
-		return "", errors.New("working dir is not specified")
-	}
-	return os.Args[1], nil
-}
-
-func readWorkingDir() ([]os.DirEntry, error) {
-	var result []os.DirEntry
-	workingDir, err := getWorkingDir()
-	if err != nil {
-		return result, err
-	}
-	entries, err := os.ReadDir(workingDir)
-	if err != nil {
-		return result, err
-	}
-	for _, e := range entries {
-		if !e.IsDir() {
-			result = append(result, e)
-		}
-	}
-	if len(result) > 0 {
-		return result, nil
-	}
-	return result, errors.New("working dir is empty")
-}
-
-func processFile(f os.File) error {
-	var b []byte
-	_, err := f.Read(b)
+func run(args ProgArgs) error {
+	size := ImageSize{uint(args.width), uint(args.height)}
+	dir, err := CreateDirContent(args.workingDir, ImageSize{uint(args.width), uint(args.height)})
 	if err != nil {
 		return err
 	}
-
+	for _, f := range dir.files {
+		err := f.Normalize(size)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func main() {
-	fmt.Println(len(os.Args), os.Args)
+	fmt.Println(os.Args)
+	args := new(ProgArgs)
+	err := args.populate()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = run(*args)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
